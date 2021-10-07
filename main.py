@@ -1,7 +1,9 @@
 import csv
+from datetime import datetime, timedelta
 
 from prefect import task, Flow, Parameter
 from logger import logger
+from prefect.schedules import IntervalSchedule
 
 @task
 def extract(path):
@@ -27,17 +29,23 @@ def load(data, path):
 
 
 
-def build_flow():
-    with Flow("first-workflow") as flow:
+def build_flow(schedule = None):
+    with Flow("first-workflow", schedule = schedule) as flow:
         path = Parameter(name = "path", required = True)
         data = extract(path)
         t_data = transform(data)
         load(t_data, path)
     return flow
 
-tasks_flow = build_flow()
+
+tasks_flow_schedule = IntervalSchedule(
+    start_date = datetime.now() + timedelta(seconds = 1),
+    interval = timedelta(seconds = 5)
+)
+
+tasks_flow = build_flow(tasks_flow_schedule)
 tasks_flow.run(
-    parameters={
+    parameters = {
         "path":"values.csv"
     }
 )
