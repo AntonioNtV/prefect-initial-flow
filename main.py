@@ -1,6 +1,6 @@
 import csv
 
-from prefect import task, Flow
+from prefect import task, Flow, Parameter
 from logger import logger
 
 @task
@@ -26,10 +26,18 @@ def load(data, path):
     return
 
 
-with Flow("first-workflow") as flow:
-    data = extract("values.csv")
-    t_data = transform(data)
-    load(t_data, "tvalues.csv")
 
+def build_flow():
+    with Flow("first-workflow") as flow:
+        path = Parameter(name = "path", required = True)
+        data = extract(path)
+        t_data = transform(data)
+        load(t_data, path)
+    return flow
 
-flow.run()
+tasks_flow = build_flow()
+tasks_flow.run(
+    parameters={
+        "path":"values.csv"
+    }
+)
